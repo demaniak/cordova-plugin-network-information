@@ -69,6 +69,8 @@ public class NetworkManager extends CordovaPlugin {
 	public static final String TYPE_3G = "3g";
 	public static final String TYPE_4G = "4g";
 	public static final String TYPE_NONE = "none";
+	
+	public static final String WTF = "WTF";
 
 	private static final String LOG_TAG = "NetworkManager";
 
