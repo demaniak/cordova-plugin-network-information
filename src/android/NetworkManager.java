@@ -94,6 +94,8 @@ public class NetworkManager extends CordovaPlugin {
      * @param webView The CordovaWebView Cordova is running in.
      */
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
+
+	try {
         super.initialize(cordova, webView);
         this.sockMan = (ConnectivityManager) cordova.getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
         this.connectionCallbackContext = null;
@@ -113,6 +115,10 @@ public class NetworkManager extends CordovaPlugin {
             cordova.getActivity().registerReceiver(this.receiver, intentFilter);
             this.registered = true;
         }
+	}
+	catch (Exception e) {
+		Log.e (getClass().getSimpleName(),"Problem in NetworkStatus Init",e);
+	}
 
     }
 
@@ -125,7 +131,8 @@ public class NetworkManager extends CordovaPlugin {
      * @return                  True if the action was valid, false otherwise.
      */
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) {
-        if (action.equals("getConnectionInfo")) {
+        if ( "getConnectionInfo".equals(action)) {
+	    try {
             this.connectionCallbackContext = callbackContext;
             NetworkInfo info = sockMan.getActiveNetworkInfo();
             String connectionType = "";
@@ -137,6 +144,10 @@ public class NetworkManager extends CordovaPlugin {
             pluginResult.setKeepCallback(true);
             callbackContext.sendPluginResult(pluginResult);
             return true;
+	    }
+	    catch (Exception e) {
+		Log.e (getClass().getSimpleName(),"Execute failed in NetworkStatus",e);
+            }
         }
         return false;
     }
@@ -145,6 +156,7 @@ public class NetworkManager extends CordovaPlugin {
      * Stop network receiver.
      */
     public void onDestroy() {
+	try {
         if (this.receiver != null && this.registered) {
             try {
                 this.cordova.getActivity().unregisterReceiver(this.receiver);
@@ -153,6 +165,11 @@ public class NetworkManager extends CordovaPlugin {
                 Log.e(LOG_TAG, "Error unregistering network receiver: " + e.getMessage(), e);
             }
         }
+	}
+	catch (Exception e)
+	{
+		Log.e (getClass().getSimpleName(),"onDestroy faield in NetworkStatus",e);
+	}
     }
 
     //--------------------------------------------------------------------------
@@ -168,17 +185,24 @@ public class NetworkManager extends CordovaPlugin {
     private void updateConnectionInfo(NetworkInfo info) {
         // send update to javascript "navigator.network.connection"
         // Jellybean sends its own info
-        JSONObject thisInfo = this.getConnectionInfo(info);
-        if(!thisInfo.equals(lastInfo))
-        {
-            String connectionType = "";
-            try {
-                connectionType = thisInfo.get("type").toString();
-            } catch (JSONException e) { }
+	if (info != null) {
+	    try {
+            JSONObject thisInfo = this.getConnectionInfo(info);
+            if(!thisInfo.equals(lastInfo))
+            {
+                String connectionType = "";
+                try {
+                    connectionType = thisInfo.get("type").toString();
+                } catch (JSONException e) { }
 
-            sendUpdate(connectionType);
-            lastInfo = thisInfo;
-        }
+                sendUpdate(connectionType);
+                lastInfo = thisInfo;
+            }
+            }
+	    catch (Exception e) {
+		Log.e(getClass().getSimpleName(),"updateConnectionInfo went blammo",e);
+            }
+       }
     }
 
     /**
