@@ -113,15 +113,22 @@ public class NetworkManager extends CordovaPlugin {
 				this.receiver = new BroadcastReceiver() {
 					@Override
 					public void onReceive(Context context, Intent intent) {
+						Log.d(getClass().getSimpleName(),"Received event!");
 						// (The null check is for the ARM Emulator, please use
 						// Intel Emulator for better results)
-						if (NetworkManager.this.webView != null)
-							updateConnectionInfo(sockMan.getActiveNetworkInfo());
+						if (NetworkManager.this.webView != null) {
+								Log.d(getClass().getSimpleName(),"hANDLING EVENT!!!");
+								updateConnectionInfo(sockMan.getActiveNetworkInfo());
+						} else {
+							Log.d(getClass().getSimpleName(),"NOT hANDLING EVENT!!!");
+						}
+							
 					}
 				};
 				cordova.getActivity().registerReceiver(this.receiver,
 						intentFilter);
 				this.registered = true;
+				Log.d(getClass().getSimpleName(),"initialize - complete");
 			}
 		} catch (Exception e) {
 			Log.e(getClass().getSimpleName(), "Problem in NetworkStatus Init",
@@ -158,12 +165,14 @@ public class NetworkManager extends CordovaPlugin {
 						PluginResult.Status.OK, connectionType);
 				pluginResult.setKeepCallback(true);
 				callbackContext.sendPluginResult(pluginResult);
+				Log.d(getClass().getSimpleName(),"execute - returning true");
 				return true;
 			} catch (Exception e) {
 				Log.e(getClass().getSimpleName(),
 						"Execute failed in NetworkStatus", e);
 			}//try-catch
 		}//if
+		Log.d(getClass().getSimpleName(),"execute - returning false");
 		return false;
 	}
 
@@ -177,6 +186,7 @@ public class NetworkManager extends CordovaPlugin {
 					this.cordova.getActivity()
 							.unregisterReceiver(this.receiver);
 					this.registered = false;
+					Log.d(getClass().getSimpleName(),"onDestroy() - complete");
 				} catch (Exception e) {
 					Log.e(LOG_TAG,
 							"Error unregistering network receiver: "
@@ -202,9 +212,9 @@ public class NetworkManager extends CordovaPlugin {
 	 */
 	private void updateConnectionInfo(NetworkInfo info) {
 		// send update to javascript "navigator.network.connection"
-		// Jellybean sends its own info
-		if (info != null) {
+		// Jellybean sends its own info		
 			try {
+				Log.d(getClass().getSimpleName(),"Attempting updateConnectionInfo(...)...");
 				JSONObject thisInfo = this.getConnectionInfo(info);
 				if (!thisInfo.equals(lastInfo)) {
 					String connectionType = "";
@@ -215,12 +225,16 @@ public class NetworkManager extends CordovaPlugin {
 
 					sendUpdate(connectionType);
 					lastInfo = thisInfo;
+					Log.d(getClass().getSimpleName(),"updateConnectionInfo(...) complete");
+				} else {
+					Log.d(getClass().getSimpleName(),"ok, NOT firing event, since it seems " + thisInfo + " == " + lastInfo);
 				}
 			} catch (Exception e) {
 				Log.e(getClass().getSimpleName(),
 						"updateConnectionInfo went blammo", e);
 			}//try-catch
-		}//if
+		
+		
 	}
 
 	/**
@@ -231,9 +245,14 @@ public class NetworkManager extends CordovaPlugin {
 	 * @return a JSONObject that represents the network info
 	 */
 	private JSONObject getConnectionInfo(NetworkInfo info) {
+		JSONObject connectionInfo = new JSONObject();
 		try {
-			String type = TYPE_NONE;
+			String type = TYPE_UNKNOWN;
 			String extraInfo = "";
+			
+			//Default the son-of-a-bitch so that we have SOMETHING
+			connectionInfo.put("type", type);
+			
 			if (info != null) {
 				// If we are not connected to any network set type to none
 				if (!info.isConnected()) {
@@ -242,13 +261,13 @@ public class NetworkManager extends CordovaPlugin {
 					type = getType(info);
 				}
 				extraInfo = info.getExtraInfo();
+			} else {
+				type = TYPE_UNKNOWN;
 			}
 
 			Log.d("CordovaNetworkManager", "Connection Type: " + type);
 			Log.d("CordovaNetworkManager", "Connection Extra Info: "
-					+ extraInfo);
-
-			JSONObject connectionInfo = new JSONObject();
+					+ extraInfo);			
 
 			try {
 				connectionInfo.put("type", type);
@@ -258,12 +277,14 @@ public class NetworkManager extends CordovaPlugin {
 						"JSON Object construction failed", e);
 			}
 
-			return connectionInfo;
+			
 		} catch (Exception e) {
 			Log.e(getClass().getSimpleName(),
 					"Catastrophic failure in  getConnectionInfo", e);
-			return new JSONObject();
+			
 		}
+		
+		return connectionInfo;
 	}
 
 	/**
@@ -281,6 +302,7 @@ public class NetworkManager extends CordovaPlugin {
 				connectionCallbackContext.sendPluginResult(result);
 			}
 			webView.postMessage("networkconnection", type);
+			Log.d(getClass().getSimpleName(), "sendUpdate - complete");
 		} catch (Exception e) {
 			Log.e(getClass().getSimpleName(), "sendUpdate - failed", e);
 		}
